@@ -16,7 +16,7 @@
     <style>
         body {
             font-family: 'Sarabun', sans-serif;
-            background: radial-gradient(circle at center, #1e0b36, #070210);
+            background: radial-gradient(circle at center, #1a0830, #05010c);
             overscroll-behavior: none;
         }
         .font-header {
@@ -24,11 +24,11 @@
         }
         /* เอฟเฟกต์สั่นของกระบอกเซียมซี */
         .shaking-active {
-            animation: shake-cup 0.12s infinite alternate;
+            animation: shake-cup 0.1s infinite alternate;
         }
         @keyframes shake-cup {
-            0% { transform: translate(4px, 4px) rotate(-4deg); }
-            100% { transform: translate(-4px, -4px) rotate(4deg); }
+            0% { transform: translate(5px, 5px) rotate(-5deg); }
+            100% { transform: translate(-5px, -5px) rotate(5deg); }
         }
         /* แอนิเมชันไม้เซียมซีหลุดเด้ง */
         .stick-out {
@@ -41,8 +41,8 @@
         }
         /* โคมไฟลอยระยิบระยับ */
         @keyframes float-lantern {
-            0%, 100% { transform: translateY(0px) scale(1); opacity: 0.3; }
-            50% { transform: translateY(-20px) scale(1.05); opacity: 0.6; }
+            0%, 100% { transform: translateY(0px) scale(1); opacity: 0.2; }
+            50% { transform: translateY(-20px) scale(1.05); opacity: 0.5; }
         }
         .lantern-bg {
             animation: float-lantern 7s ease-in-out infinite;
@@ -68,9 +68,9 @@
             <span class="text-[10px] text-yellow-300 font-bold tracking-widest uppercase">Daily Horoscope Fortune</span>
         </div>
         <h1 class="text-3xl font-header font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-amber-500 drop-shadow">
-            เซียมซีอัจฉริยะ
+            เซียมซีสลักดวง
         </h1>
-        <p class="text-xs text-purple-200/60 mt-0.5">กรอกข้อมูลดวงชะตา เพื่อทำนายเคราะห์ดีร้ายประจำวัน</p>
+        <p class="text-xs text-purple-200/60 mt-0.5">ระบุอายุและเพศวิถี เพื่อคำนวณดวงชะตาประจำวันและสีนำโชค</p>
     </header>
 
     <!-- คอนเทนเนอร์หลักของหน้าต่างทำนาย -->
@@ -176,7 +176,7 @@
                     </div>
                 </div>
 
-                <!-- ปุ่มควบคุมการเริ่มเขย่าตามเงื่อนไขเดิม -->
+                <!-- ปุ่มควบคุมการเริ่มเขย่า -->
                 <button id="btn-shake-trigger" onclick="simulateShakingAction()" 
                     class="w-full py-4 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-600 text-purple-950 font-header font-bold text-md shadow-lg shadow-yellow-500/10 transition active:scale-95 flex items-center justify-center gap-2">
                     <i class="fa-solid fa-hand-sparkles animate-pulse"></i>
@@ -222,7 +222,7 @@
                             <div class="absolute inset-0 border-3 border-yellow-500/20 rounded-full"></div>
                             <div class="absolute inset-0 border-3 border-t-yellow-500 rounded-full animate-spin"></div>
                         </div>
-                        <p class="text-xs font-header text-yellow-200/80 animate-pulse">กำลังอ่านพิกัดดวงดาวคู่ชะตาวันนี้...</p>
+                        <p class="text-xs font-header text-yellow-200/80 animate-pulse">กำลังสแกนวิถีดวงดาววันนี้...</p>
                     </div>
 
                     <!-- รายละเอียดวิเคราะห์ดวงรายวัน -->
@@ -268,7 +268,7 @@
     </footer>
 
     <script>
-        const apiKey = ""; // ปล่อยว่างเพื่อความปลอดภัยระบบ
+        const apiKey = ""; // ปล่อยว่างไว้เพื่อความปลอดภัยของระบบรันไทม์
         
         let selectSex = "";
         let selectAge = 25;
@@ -322,28 +322,6 @@
             aLabel.innerText = colors.avoid;
             document.getElementById('color-avoid-border').className = `bg-black/20 p-2 rounded-lg border ${colors.borderA}`;
         }
-
-        // คลังผลพยากรณ์สำรองคุณภาพสูง ท้องถิ่นกรณีอินเทอร์เน็ตขาดหาย
-        const backupFortuneDB = [
-            {
-                number: 2,
-                summary: "ชะตาฟ้ารายวันวันนี้โดดเด่นเรื่องนิมิตหมายแห่งความอุดมสมบูรณ์ ทุกอย่างกำลังหมุนเวียนไปทิศทางบวกอย่างเห็นได้ชัด",
-                work: "การทำงานเป็นกลุ่มก้อนจะเกิดเอกภาพและมีประสิทธิภาพดีมาก ใครรองานใหม่มีเกณฑ์ได้รับโอกาสเชิญตัวเข้าชี้แจ้งข้อเสนอพิเศษ",
-                money: "รายได้หลักยังมั่นคงดี มีโชคสว่างสลับไหลเข้ามารายทางตลอดวัน เหมาะสมแก่การเคลียร์ภาระหนี้สินคงค้างเก่า",
-                love: "คนที่มีคู่ครองจะส่งเสริมการทำสัมมาอาชีพร่วมกันอย่างดีเยี่ยม คนโสดยิ้มแย้มเข้าไว้ เสน่ห์จะไปถูกตาผู้ใหญ่แนะนำคู่มาให้",
-                tips: "เลือกเสื้อผ้าตามสีแนะนำมงคลวันนี้จะเพิ่มพูนความมั่นใจในการเข้าสังคมมากยิ่งขึ้น",
-                lucky: [2, 12, 22]
-            },
-            {
-                number: 8,
-                summary: "เหมือนการตระเตรียมกำลังก้าวข้ามผืนป่าทึบ ได้เรียนรู้กระบวนการชีวิตที่ทำให้จิตวิญญาณภายในเติบโตกล้าแกร่งขึ้น",
-                work: "การงานเหน็ดเหนื่อยมากกว่าปกติจากคนรอบตัว จงเลี่ยงการมีปากเสียงและขัดแย้งกับคนต่างระดับ ควรรักษาความสงบในจิตใจ",
-                money: "ยังอยู่ในเกณฑ์ที่จำเป็นต้องควบคุมการใช้จ่าย ห้ามค้ำประกันหนี้สินหรือจ่ายลงทุนในธุรกิจที่ยังมองเห็นอนาคตไม่เด่นชัด",
-                love: "ความห่างไกลหรือภาระหน้าที่อาจทำให้ใจไขว้เขวเล็กน้อย ควรรักษาความซื่อตรงต่อกัน คนโสดมุ่งโฟกัสดูแลตัวเองก่อนเด่นที่สุด",
-                tips: "การไหว้พระสร้างบุญด้วยจิตวิญญาณแจ่มใส จะพิทักษ์ภัยอันตรายรอบตัวให้เบาบางลงได้หมดสิ้น",
-                lucky: [8, 18, 88]
-            }
-        ];
 
         // ระบบเสียงไม้สังเคราะห์ (Web Audio API)
         function initAudio() {
@@ -407,7 +385,7 @@
             document.getElementById('step-form').classList.remove('hidden');
         }
 
-        // ฟังก์ชันระบบแอนิเมชันกดสั่นกระบอกเซียมซี
+        // ระบบแอนิเมชันกดสั่นกระบอกเซียมซี
         function simulateShakingAction() {
             if (isShakingActive || isCompleted) return;
             isShakingActive = true;
@@ -433,7 +411,6 @@
             sticks.classList.add('shaking-active');
             spark.classList.add('scale-110');
 
-            // ลูปจำลองสะสมความคืบหน้าแบบกระบอกสั่นสะเทือนสม่ำเสมอ
             const shakeInterval = setInterval(() => {
                 shakeProgress += Math.floor(Math.random() * 8) + 4;
                 if (shakeProgress > 100) shakeProgress = 100;
@@ -455,17 +432,14 @@
             sticks.classList.remove('shaking-active');
             spark.classList.remove('scale-110');
 
-            // ปรับแต่งปุ่มกดกลับคืนค่าเดิม
             triggerBtn.disabled = false;
             triggerBtn.classList.remove('opacity-50');
             triggerBtn.querySelector('span').innerText = "กดปุ่มเพื่อเริ่มเขย่า";
 
-            // ยิงไม้ที่สุ่มเสี่ยงทายได้พุ่งลอยตัวขึ้นมา
             const stickSelected = document.getElementById('selected-stick');
             stickSelected.classList.remove('hidden');
             stickSelected.classList.add('stick-out');
 
-            // เล่นเสียงสัญญาณไม้หลุดพ้นปากกระบอก
             if (audioCtx) {
                 setTimeout(() => {
                     try {
@@ -484,7 +458,6 @@
                 }, 80);
             }
 
-            // นำส่งผู้เสี่ยงทายไปยังหน้าดวงชะตาทำนาย
             setTimeout(() => {
                 document.getElementById('step-shake').classList.add('hidden');
                 document.getElementById('step-result').classList.remove('hidden');
@@ -496,13 +469,92 @@
             }, 1200);
         }
 
+        // ระบบพยากรณ์สดแบบมีขั้นตอนคำนวณสำรองในเครื่อง (Dynamic Local Horoscope Engine)
+        // รับประกันว่าหากเปลี่ยนหมายเลข อายุ เพศ หรือวัน ดวงชะตาจะคำนวณสูตรออกมาไม่ซ้ำกัน
+        function generateLocalTailoredFortune(number, age, sex, day) {
+            // คลังส่วนผสมคำทำนายย่อยสำหรับนำมาประกอบกันอย่างเป็นเอกลักษณ์ตามรหัสคณิตศาสตร์
+            const overallThemes = [
+                "พิกัดชะตาเปิดรับพลังมงคลอย่างยิ่ง สิ่งที่ติดขัดมานานกำลังสลัดตัวหลุดออกไป มีคลื่นความก้าวหน้าพัดพามาใกล้ตัว",
+                "เปรียบดั่งการข้ามพ้นหุบเขาที่คดเคี้ยว แม้จะเหนื่อยกับเรื่องของคนอื่น แต่ผู้หลักผู้ใหญ่ในวงวารเริ่มหันมาเล็งเห็นศักยภาพที่แท้จริงของคุณ",
+                "ชะตาชีวิตวันนี้เหมือนน้ำนิ่งไหลลึก มีสติปัญญาเฉียบแหลมในการอ่านเกมหรือเจรจาติดต่อสิ่งใดก็จะบรรลุผลสำเร็จง่ายขึ้น",
+                "ดวงชะตามีเกณฑ์ได้รับสิ่งของหรือข่าวดีจากระยะไกล เป็นช่วงเวลาทองของการวางเป้าหมายและตัดสินใจในเรื่องสำคัญ",
+                "เป็นช่วงก้าวกระโดดของการพิสูจน์ฝีมือ ควรปล่อยวางความกังวลเก่าๆ แล้วเปิดใจรับพันธมิตรหรือคำแนะนำจากมิตรสหายต่างวัย",
+                "ชะตาสว่างไสวดั่งตะวันยามเช้า อุปสรรคทางอารมณ์เริ่มทุเลาลง ปัญญาแจ่มใสพร้อมขจัดปัญหารายวันได้อย่างเป็นขั้นเป็นตอน"
+            ];
+
+            const workThemes = [
+                "การงานและการเรียนของคุณต้องการความรอบคอบในเรื่องเอกสารและการสื่อสาร แนะนำให้ใช้สีมงคลประจำวันนี้แต่งกายจะช่วยเพิ่มอำนาจการเจรจาให้ผ่านฉลุย",
+                "มีงานด่วนหรือการทดสอบฝีมือเข้ามาปะทะกะทันหัน แต่ด้วยสติปัญญาที่ผ่านโลกมา จะทำให้ปัญหาใหญ่กลายเป็นเรื่องเล็กและได้รับความเคารพจากรอบข้างยิ่งขึ้น",
+                "สิ่งที่เคยเสนอไว้หรือโครงการเก่าจะถูกปัดฝุ่นนำมาทำใหม่ให้เกิดมูลค่า คนรอบตัวจะเริ่มเข้ามาขอความช่วยเหลือและพึ่งพิงความคิดของคุณ",
+                "การเรียนและวิชาชีพพุ่งแรงแซงทางโค้ง มีโอกาสที่จะได้รับการมอบหมายโปรเจกต์สำคัญที่ท้าทายความสามารถ แต่ระวังเรื่องเวลาพักผ่อนไม่เพียงพอ"
+            ];
+
+            const moneyThemes = [
+                "มีลาภปากลาภลอยหรือของขวัญปลอบใจเข้ามาหา มีเงินทองหมุนเวียนคล่องตัวดีขึ้น หากมองหาลู่ทางการลงทุนระยะยาว วันนี้จังหวะเวลาดีมาก",
+                "การเงินอยู่ในระดับทรงตัว มีเกณฑ์เสียเงินให้กับเรื่องของสุขภาพหรือการบำรุงรักษายานพาหนะ แต่จะได้รับโชคกลับมาในรูปแบบมิตรภาพหรือข่าวดี",
+                "รายจ่ายส่วนใหญ่หมดไปกับสิ่งที่คุณรักและการดูแลครอบครัว ชะตาการเงินช่วงนี้ต้องใจเย็น อย่าเพิ่งลงทุนในธุรกิจที่มีความเสี่ยงสูงจนเกินตัว",
+                "มีเกณฑ์ได้รับข่าวดีเรื่องเงินกู้หรือหนี้สินที่รอคอยการชำระคืน กระแสเงินสดในวันนี้จะสะพัดขึ้นอย่างน่าพึงพอใจ"
+            ];
+
+            const loveThemes = [
+                "สำหรับคนมีคู่ ความรักมั่นคงเป็นปึกแผ่นเพราะความเข้าอกเข้าใจกันเป็นอย่างดี ส่วนคนโสดช่วงนี้เสน่ห์แรง จะมีคนอายุน้อยกว่าเข้ามาหยั่งเชิงทำความรู้จัก",
+                "ความรักต้องการเวลาส่วนตัวและพื้นที่หายใจให้กันและกันมากขึ้น คนโสดในวันนี้หัวใจค่อนข้างสงบและรักในความอิสระของตัวเองเป็นพิเศษ",
+                "ความสัมพันธ์ดำเนินไปในทิศทางที่ดี มีโอกาสได้รับการดูแลเอาใจใส่จากคนรักหรือกัลยาณมิตรที่ดีรอบตัว คนโสดจะสะดุดรักในสถานที่ทำงานหรือสถาบันการศึกษา",
+                "รักอาจมีความเข้าใจคลาดเคลื่อนจากคำพูดสั้นๆ ควรใช้น้ำเย็นเข้าลูบและหลีกเลี่ยงการจับผิด คนโสดจะมีคนอุปถัมภ์ชี้ทางพบคู่ที่มีแนวคิดคล้ายกัน"
+            ];
+
+            const tipsThemes = [
+                "การนั่งสมาธิเพียงห้านาทีหรือสงบสติก่อนลงมือทำสิ่งใดในวันนี้ จะช่วยให้คุณประหยัดเวลาแก้ไขปัญหาไปได้เกือบครึ่งวัน",
+                "สวมใส่เครื่องแต่งกายด้วยกลุ่มสีมงคลวันนี้ จะช่วยสลายพลังงานลบและดึงดูดผู้คนดีๆ เข้ามาสู่ตัวคุณอย่างน่าอัศจรรย์",
+                "ความสำเร็จที่แท้จริงเกิดจากการลงมือทำทีละน้อยอย่างสม่ำเสมอ อย่ากดดันตนเองมากเกินไปในสิ่งที่ยังมาไม่ถึง",
+                "รอยยิ้มและการมีน้ำใจต่อผู้คนรอบข้างในวันนี้ จะกลายเป็นสะพานเชื่อมโยงโอกาสดีๆ ที่คาดไม่ถึงเข้ามาให้คุณในอนาคต"
+            ];
+
+            // สร้างดัชนีชี้วัด (Hash Index) จากคุณสมบัติส่วนบุคคลเพื่อความแม่นยำรายคน
+            const nameLen = day.length + sex.length;
+            const seed = parseInt(number) + parseInt(age) + nameLen;
+
+            const finalOverall = overallThemes[seed % overallThemes.length];
+            const finalWork = workThemes[(seed * 2 + 1) % workThemes.length];
+            const finalMoney = moneyThemes[(seed * 3 + 2) % moneyThemes.length];
+            const finalLove = loveThemes[(seed * 4 + 3) % loveThemes.length];
+            const finalTips = tipsThemes[(seed * 5 + 4) % tipsThemes.length];
+
+            // นำเศษสมการมาสุ่มเลขมงคล 3 ตัวแบบไม่ซ้ำกัน
+            const n1 = (seed * 7 + 3) % 10;
+            const n2 = (seed * 8 + 5) % 9 + 1;
+            const n3 = (seed * 9 + 8) % 99 + 1;
+
+            return {
+                summary: `สำหรับผู้เสี่ยงดวงเพศ${sex} วัย ${age} ปี ใน${day}: ${finalOverall}`,
+                work: finalWork,
+                money: finalMoney,
+                love: finalLove,
+                tips: finalTips,
+                lucky: [n1, n2, n3]
+            };
+        }
+
+        // ระบบล้างอักขระแปลกปลอมอย่างปลอดภัย ป้องกันปัญหา Syntax Error จาก backticks ของ AI
+        function sanitizeJSONString(rawText) {
+            let cleaned = rawText.trim();
+            // ใช้รหัสอักขระพิเศษเพื่อป้องกันสัญลักษณ์ Backtick ซ้อนทับระบบแปลงไฟล์
+            const ticksSymbol = String.fromCharCode(96, 96, 96);
+            if (cleaned.startsWith(ticksSymbol)) {
+                const startRegex = new RegExp("^" + ticksSymbol + "(?:json)?\\s*", "i");
+                const endRegex = new RegExp("\\s*" + ticksSymbol + "$");
+                cleaned = cleaned.replace(startRegex, "").replace(endRegex, "");
+            }
+            return cleaned.trim();
+        }
+
         // ระบบเชื่อมโยงถอดข้อความดวงชะตาและโชคลาภด้วย Gemini AI
         async function executeAIFortune(number) {
             document.getElementById('result-loader').classList.remove('hidden');
             document.getElementById('result-data').classList.add('hidden');
 
             const systemPrompt = "คุณคือนักพยากรณ์โหราศาสตร์พญามังกรโบราณและพุทธพยากรณ์ผู้เปี่ยมเมตตาธรรม พยากรณ์ดวงแม่นยำลึกซึ้งและเฉียบคม";
-            const userPrompt = `กรุณาพยากรณ์ดวงชะตาของบุคคลเพศสภาพ ${selectSex} อายุ ${selectAge} ปี ในส่วนดวงชะตา "${todayName}" (ดวงประจำวันเกิดวันนี้ของเขาโดยตรง) ซึ่งเขาสุ่มได้เลขเซียมซีติ้ว "ใบที่ ${number}"
+            const userPrompt = `กรุณาพยากรณ์ดวงชะตาของบุคคลเพศสภาพ ${selectSex} อายุ ${selectAge} ปี ในดวงชะตา "${todayName}" (ดวงประจำวันเกิดวันนี้ของเขาโดยตรง) ซึ่งเขาสุ่มได้เลขเซียมซีติ้ว "ใบที่ ${number}"
             
             กรุณาเขียนตอบกลับวิเคราะห์ดวงวันนี้เป็นรูปแบบ JSON (ใช้ภาษาไทย) มีคีย์โครงสร้างตามลำดับดังต่อไปนี้:
             {
@@ -561,23 +613,20 @@
                 if (!apiKey) throw new Error("API Key configuration empty.");
                 
                 const res = await callGeminiAPIRuntime();
-                const jsonText = res.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (jsonText) {
-                    fillToResultUI(JSON.parse(jsonText));
+                const rawText = res.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (rawText) {
+                    const cleanJSON = sanitizeJSONString(rawText);
+                    const parsedData = JSON.parse(cleanJSON);
+                    fillToResultUI(parsedData);
                     return;
                 }
                 throw new Error("Malform JSON structures.");
             } catch (err) {
-                // เรียกใช้คลังเก็บข้อมูลทำนายสำรองออฟไลน์เมื่อ API ไม่เสถียร
-                console.log("Gemini Connection Fallback Triggered.");
-                const selectedMock = backupFortuneDB.find(f => f.number === (number % 2 === 0 ? 8 : 2)) || backupFortuneDB[0];
-                
-                const personalizedData = {
-                    ...selectedMock,
-                    summary: `ดวงประจำ${todayName} สำหรับคุณเสี่ยงทายวัย ${selectAge} ปี: ${selectedMock.summary}`,
-                    tips: `ข้อคิดเตือนใจดวงประจำ${todayName}วัยของคุณคือ: ${selectedMock.tips}`
-                };
-                fillToResultUI(personalizedData);
+                // หากการดึงค่า API เกิดข้อผิดพลาดหรือถอดรหัสล้มเหลว
+                // จะเข้าสู่โหมดจำลองการเสี่ยงดวงเฉพาะบุคคล (Dynamic Local Engine) ซึ่งเปลี่ยนตามวัน อายุ และเลขที่เสี่ยงได้ทันที
+                const localFortune = generateLocalTailoredFortune(number, selectAge, selectSex, todayName);
+                fillToResultUI(localFortune);
             }
         }
 

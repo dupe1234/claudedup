@@ -80,7 +80,11 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         e.preventDefault();
         $("authSubmit").disabled = true; msg("");
         const creds = { email: $("authEmail").value.trim(), password: $("authPass").value };
-        const { data, error } = signUp ? await sb.auth.signUp(creds) : await sb.auth.signInWithPassword(creds);
+        // the confirmation email links back to this page (it must be listed in Supabase → Auth → Redirect URLs)
+        const back = location.origin + location.pathname;
+        const { data, error } = signUp
+          ? await sb.auth.signUp({ ...creds, options: { emailRedirectTo: back } })
+          : await sb.auth.signInWithPassword(creds);
         $("authSubmit").disabled = false;
         if (error) return msg(thai(error), true);
         if (!data.session) return msg("สร้างบัญชีแล้ว เปิดลิงก์ยืนยันในอีเมล แล้วกลับมาเข้าสู่ระบบ จากนั้นรอผู้ดูแลอนุมัติ");

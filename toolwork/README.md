@@ -21,10 +21,10 @@
 
 ## รันบนเครื่อง
 
-ทุกหน้าเป็นไฟล์ HTML ธรรมดา เปิดผ่านเว็บเซิร์ฟเวอร์อะไรก็ได้
+ทุกหน้าเป็นไฟล์ HTML ธรรมดา เปิดผ่านเว็บเซิร์ฟเวอร์อะไรก็ได้ โดยรันจากในโฟลเดอร์ `toolwork`
 
 ```bash
-python3 -m http.server 8765
+cd toolwork && python3 -m http.server 8765
 ```
 
 จากนั้นเปิด http://localhost:8765/taskboard.html

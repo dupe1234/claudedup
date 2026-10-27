@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Spec Payment Gateway</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f5fbf'/%3E%3Cpath d='M6.5 10.5l2 2 3.5-4M6.5 20.5l2 2 3.5-4' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='15' y='9.5' width='11' height='2.6' rx='1.3' fill='%23fff'/%3E%3Crect x='15' y='19.5' width='11' height='2.6' rx='1.3' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: left column = service checklist grouped by spec section; right column = live summary of usable endpoints. Stacks on narrow screens. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --col: #e9edf1;
+  --fg: #17212b;
+  --muted: #5c6b79;
+  --line: #d5dce3;
+  --accent: #1f5fbf;
+  --accent-fg: #ffffff;
+  --accent-soft: #e3ecfa;
+  --ok: #2f8f4e;
+  --warn: #b57800;
+  --cb: #a14bb8;
+  --shadow: 0 1px 2px rgba(23,33,43,.12);
+  --f-body: "IBM Plex Sans Thai", "Sukhumvit Set", "Thonburi", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12171d; --surface: #1c232b; --col: #171d24; --fg: #e4e9ee; --muted: #93a1ae; --line: #2c3640;
+  --accent: #5b9bf0; --accent-fg: #0d1520; --accent-soft: #1d2e47; --ok: #57c47a; --warn: #e0b23c; --cb: #c98ae0;
+  --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12171d; --surface: #1c232b; --col: #171d24; --fg: #e4e9ee; --muted: #93a1ae; --line: #2c3640;
+  --accent: #5b9bf0; --accent-fg: #0d1520; --accent-soft: #1d2e47; --ok: #57c47a; --warn: #e0b23c; --cb: #c98ae0;
+  --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark }
+
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.5 }
+button, input { font: inherit; color: inherit }
+button { cursor: pointer }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+
+header { background: var(--surface); border-bottom: 1px solid var(--line) }
+.appnav { display: flex; align-items: center; gap: 8px; padding-block: 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap }
+.appnav a { display: inline-flex; align-items: center; gap: 8px; flex: none; padding: 7px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); text-decoration: none; font-weight: 600; white-space: nowrap; box-shadow: 0 1px 1px rgba(23,33,43,.06); transition: background .15s, border-color .15s, color .15s }
+.appnav a svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.appnav a:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent) }
+.appnav a:active { transform: translateY(1px) }
+.appnav a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+@media (max-width: 560px) { .appnav a { padding: 7px 10px } .appnav a .lbl-long { display: none } }
+.head-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-block: 12px }
+.crumb { font-size: 12px; color: var(--muted) }
+h1 { margin: 0; font-size: 20px; font-weight: 700; text-wrap: balance }
+.title-block { flex: 1 1 240px; min-width: 0 }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 6px 12px; font-weight: 500 }
+.btn:hover { background: var(--col) }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent) }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden }
+.seg button { border: 0; background: var(--surface); padding: 6px 12px }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600 }
+
+main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 16px; padding-block: 16px 32px; align-items: start }
+@media (max-width: 900px) { main { grid-template-columns: 1fr } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-width: 0 }
+.panel-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line) }
+.panel-head h2 { margin: 0; font-size: 15px; font-weight: 600; flex: 1 }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line) }
+.presets .lbl { font-size: 12px; color: var(--muted); align-self: center; margin-right: 4px }
+.chipbtn { border: 1px solid var(--line); background: var(--bg); border-radius: 14px; padding: 2px 10px; font-size: 13px }
+.chipbtn:hover { border-color: var(--accent); color: var(--accent) }
+
+.group { padding: 8px 0; border-bottom: 1px solid var(--line) }
+.group:last-child { border-bottom: 0 }
+.group-head { display: flex; align-items: center; gap: 8px; padding: 4px 16px }
+.group-head h3 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); flex: 1 }
+.group-head button { border: 0; background: transparent; color: var(--accent); font-size: 12px; padding: 2px 4px }
+.svc { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding: 6px 16px; cursor: pointer; align-items: start }
+.svc:hover { background: var(--bg) }
+.svc input { margin: 3px 0 0; width: 16px; height: 16px; accent-color: var(--accent) }
+.svc-name { font-weight: 500 }
+.svc-name .tag { margin-left: 6px; vertical-align: 1px }
+.svc-no { font-family: var(--f-mono); font-size: 12px; color: var(--muted); display: inline-block; min-width: 2ch; margin-right: 8px }
+.svc-desc { grid-column: 2; font-size: 13px; color: var(--muted) }
+.subtypes { margin: 0 16px 6px 42px; padding: 6px 0 4px 12px; border: 0; border-left: 2px solid var(--line); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px }
+@media (max-width: 480px) { .subtypes { grid-template-columns: 1fr; margin-left: 34px } }
+.subtypes legend { float: left; width: 100%; padding: 0 0 4px; font-size: 12px; font-weight: 600; color: var(--muted); display: flex; gap: 6px; align-items: center }
+.subtypes legend span { font-weight: 400; font-variant-numeric: tabular-nums }
+.subtypes legend button { margin-left: auto; border: 0; background: transparent; color: var(--accent); font-size: 12px; padding: 2px 4px }
+.sub { display: flex; gap: 8px; align-items: flex-start; padding: 3px 4px; border-radius: 4px; cursor: pointer; font-size: 13px; min-width: 0 }
+.sub:hover { background: var(--bg) }
+.sub input { margin: 3px 0 0; width: 15px; height: 15px; accent-color: var(--accent); flex: none }
+.sub code { font-family: var(--f-mono); font-size: 12px; font-weight: 600 }
+.sub small { display: block; color: var(--muted); font-size: 12px }
+.tag { font-size: 11px; font-weight: 600; border-radius: 4px; padding: 0 6px; white-space: nowrap }
+.tag.auto { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn) }
+.tag.cb { background: color-mix(in srgb, var(--cb) 16%, transparent); color: var(--cb) }
+
+.summary { position: sticky; top: 12px }
+@media (max-width: 900px) { .summary { position: static } }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border-bottom: 1px solid var(--line) }
+.stat { background: var(--surface); padding: 10px 16px }
+.stat b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1.2 }
+.stat span { font-size: 12px; color: var(--muted) }
+.sum-body { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 14px }
+.empty { color: var(--muted); text-align: center; padding: 32px 16px }
+.caps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 2px }
+.sec-title { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px }
+.ep { border: 1px solid var(--line); border-radius: 6px; overflow: hidden }
+.ep + .ep { margin-top: 8px }
+.ep summary { list-style: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 10px; cursor: pointer }
+.ep summary::-webkit-details-marker { display: none }
+.ep summary:hover { background: var(--bg) }
+.method { font-family: var(--f-mono); font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent) }
+.method.cb { background: color-mix(in srgb, var(--cb) 16%, transparent); color: var(--cb) }
+.ep-title { min-width: 0 }
+.ep-title .n { font-weight: 600 }
+.ep-title code { display: block; font-family: var(--f-mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere }
+.ep-detail { padding: 8px 10px 12px; border-top: 1px solid var(--line); font-size: 13px; display: flex; flex-direction: column; gap: 8px; background: var(--bg) }
+.kv { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 2px 8px }
+.kv dt { color: var(--muted) }
+.kv dd { margin: 0; overflow-wrap: anywhere }
+.fields { display: flex; flex-wrap: wrap; gap: 4px }
+.f { font-family: var(--f-mono); font-size: 12px; border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; background: var(--surface) }
+.f.opt { color: var(--muted); border-style: dashed }
+.why { font-size: 12px; color: var(--warn) }
+.note { font-size: 12px; color: var(--muted) }
+.flow { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px }
+.flow code { font-family: var(--f-mono); font-size: 12px }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 8px 16px; border-radius: 6px; z-index: 30; font-size: 13px }
+footer { color: var(--muted); font-size: 12px; padding-block: 0 24px }
+.sum-jump { display: none }
+@media (max-width: 900px) {
+  input { font-size: 16px }
+  .svc { padding-block: 10px }
+  .sub { padding-block: 6px }
+  .chipbtn { padding: 6px 12px }
+  /* phones: floating bar jumps to the summary, which sits below the long checklist */
+  .sum-jump { display: flex; align-items: center; gap: 10px; position: fixed; z-index: 20; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px)); padding: 12px 16px; border-radius: 10px; background: var(--accent); color: var(--accent-fg); text-decoration: none; font-weight: 600; box-shadow: 0 4px 16px rgba(0, 0, 0, .25) }
+  .sum-jump span { flex: 1; font-weight: 500; font-size: 13px }
+  .sum-jump[hidden] { display: none }
+  footer { padding-bottom: 88px }
+  .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)) }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="wrap appnav" aria-label="เครื่องมือ">
+    <a href="taskboard.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="9.5" y="4" width="5" height="11" rx="1.5"/><rect x="16" y="4" width="5" height="7" rx="1.5"/></svg><span>บอร์ดงาน</span></a>
+    <a href="spec.html" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7l2 2 3.5-3.5M3.5 16l2 2 3.5-3.5M13 8h8M13 17h8"/></svg><span>Spec<span class="lbl-long"> Payment Gateway</span></span></a>
+    <a href="notes.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h5"/></svg><span>Note</span></a>
+  </nav>
+  <div class="wrap head-row">
+    <div class="title-block">
+      <div class="crumb">Max Card Payment Gateway API · Spec v3.8 (16 ก.พ. 2026)</div>
+      <h1>เลือก service ที่ลูกค้าต้องใช้</h1>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel" aria-labelledby="pickTitle">
+    <div class="panel-head">
+      <h2 id="pickTitle">Service API</h2>
+      <button class="btn" type="button" id="clearAll">ล้างทั้งหมด</button>
+    </div>
+    <div class="presets" id="presets"><span class="lbl">ชุดสำเร็จรูป</span></div>
+    <div id="groups"></div>
+  </section>
+
+  <section class="panel summary" aria-labelledby="sumTitle" aria-live="polite">
+    <div class="panel-head">
+      <h2 id="sumTitle">สรุปเส้นที่ใช้ได้</h2>
+      <button class="btn primary" type="button" id="copyBtn">คัดลอกสรุป</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="sApi">0</b><span>API ที่เรียก</span></div>
+      <div class="stat"><b id="sCb">0</b><span>Callback ที่ต้องรับ</span></div>
+      <div class="stat"><b id="sAuto">0</b><span>เพิ่มอัตโนมัติ</span></div>
+    </div>
+    <div class="sum-body" id="summary"></div>
+  </section>
+</main>
+<footer class="wrap">ข้อมูลจาก PaymentGateway API Specification v3.8 · ทุกเส้นเป็น REST over HTTPS แบบ POST · apikey ของ Card Payment ดูในเอกสารหน้า 39 (ไม่แสดงในหน้านี้)</footer>
+<a class="sum-jump" id="sumJump" href="#sumTitle" hidden>ดูสรุป <span id="sumJumpText"></span>↓</a>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+
+const GROUPS = [
+  { id: "auth", name: "Access Token" },
+  { id: "pay", name: "Payment API" },
+  { id: "bill", name: "Bill Payment API" },
+  { id: "cb", name: "Callback (ฝั่งร้านค้าต้องเปิดรับ)" },
+  { id: "link", name: "Payment Link" },
+  { id: "card", name: "Card Payment URL" },
+];
+
+// no = section number in the spec; req/opt = request fields; needs = services this one depends on
+const SERVICES = [
+  { id: "token", no: 1, g: "auth", name: "Payment Gateway Access Token", path: "/oauth/token", ct: "form-urlencoded", auth: "ไม่ต้องใช้",
+    desc: "ขอ Bearer token (อายุ 1800 วินาที) ใช้กับทุกเส้นใน Payment API และ Bill Payment",
+    cap: "ขอ token เพื่อเรียก API", req: ["grant_type", "client_id", "client_secret"], page: 3 },
+
+  { id: "createPayment", no: 2, g: "pay", name: "Create Payment Transaction", path: "/api/CreatePayment", needs: ["token"],
+    desc: "สร้างรายการรับชำระ ได้ QR (Base64 + qrRawData) กลับมา รองรับ QRTS, QRPP, QRCS, CARD, MAXP, MAXW, DGW01, ACUP",
+    cap: "รับชำระด้วย Thai QR, PromptPay, QR บัตรเครดิต, บัตรเครดิต, Max Card Point, Max Me Wallet, Digital Wallet, ACU Pay",
+    req: ["MID", "TransactionID", "PaymentType", "AmountPaid"], opt: ["CustAccNo", "CustName", "BScanCFlag", "BillPayFlag"],
+    note: "ได้ OrderID, Ref1–3 กลับมาใช้กับเส้นอื่น · PaymentType = CARD ต้องใช้ Card Payment URL ต่อ", page: 4 },
+  { id: "verifySlip", no: 3, g: "pay", name: "Verify Payment Slip", path: "/api/VerifySlip", needs: ["token", "createPayment"],
+    desc: "ตรวจสลิปโดยส่ง QR String ที่สแกนจากสลิป คืนยอด ค่าธรรมเนียม VAT และข้อมูลบัญชีผู้โอน",
+    cap: "ตรวจสอบสลิปโอนเงิน", req: ["MID", "Ref2", "QRString", "AmountPaid"], note: "ใช้ Ref2 จาก Create Payment", page: 7 },
+  { id: "createWithdraw", no: 4, g: "pay", name: "Create Withdraw/Settlement Transaction", path: "/api/CreateWithdraw", needs: ["token"],
+    desc: "ถอนเงิน (WTD) หรือโอนออก (TRD) ไปบัญชีปลายทางผ่าน PromptPay proxy",
+    cap: "ถอนเงิน / โอนเงินออกจากยอดคงเหลือร้านค้า",
+    req: ["MID", "WithdrawType", "WithdrawNo", "WithdrawDate", "ProxyType", "ProxyID", "ToBankID", "BeneficiaryName", "Amount", "SenderID", "SenderName", "SenderAddr", "SenderIDType", "SenderProvince", "SenderCountry"],
+    note: "ToBankID จำเป็นเฉพาะ ProxyType = ACCNO · ได้ WithdrawID กลับมา", page: 9 },
+  { id: "voidPayment", no: 5, g: "pay", name: "Void Payment Transaction", path: "/api/VoidPayment", needs: ["token", "createPayment"],
+    desc: "ยกเลิกรายการที่ยังไม่มีการสแกน QR", cap: "ยกเลิกรายการรับชำระที่ยังไม่ถูกสแกน", req: ["MID", "OrderID"], page: 12 },
+  { id: "paymentInquiry", no: 6, g: "pay", name: "Payment Inquiry", path: "/api/PaymentInquiry", needs: ["token", "createPayment"],
+    desc: "เช็กสถานะรายการ: QR Released, Payment Verifying, Payment Completed", cap: "ตรวจสถานะการชำระเงิน", req: ["MID", "OrderID"], page: 13 },
+  { id: "withdrawInquiry", no: 7, g: "pay", name: "Withdraw/Transfer out Inquiry", path: "/api/WithdrawInquiry", needs: ["token", "createWithdraw"],
+    desc: "เช็กสถานะการถอน/โอนออก พร้อมเหตุผลถ้าถูกปฏิเสธ", cap: "ตรวจสถานะการถอน / โอนออก", req: ["MID", "WithdrawID"], opt: ["WithdrawNo"], page: 15 },
+  { id: "balance", no: 8, g: "pay", name: "Balance Inquiry", path: "/api/BalanceInquiry", needs: ["token"],
+    desc: "ดูยอดเงินคงเหลือที่ถอนได้ของร้านค้า", cap: "ดูยอดเงินคงเหลือ", req: ["MID"], page: 17 },
+  { id: "createFundout", no: 9, g: "pay", name: "Create Fundout Transaction", path: "/api/CreateFundout", needs: ["token"],
+    desc: "โอนเงินออกในนาม Business Partner (ใช้ MID ของ Business Partner) มีวงเงินต่อเดือน",
+    cap: "โอนเงินออกแบบ Fundout (Business Partner)",
+    req: ["MID", "TransactionID", "FundoutDate", "ProxyType", "ProxyID", "ToBankID", "BeneficiaryName", "Amount", "SenderID", "SenderName"], note: "ได้ FundoutID กลับมา", page: 19 },
+  { id: "fundoutInquiry", no: 10, g: "pay", name: "Fundout Inquiry", path: "/api/FundoutInquiry", needs: ["token", "createFundout"],
+    desc: "เช็กสถานะรายการ Fundout", cap: "ตรวจสถานะ Fundout", req: ["MID", "FundoutID"], opt: ["TransactionID"], page: 21 },
+  { id: "settleSummary", no: 11, g: "pay", name: "Settlement Summary", path: "/api/SettleSummary", needs: ["token"],
+    desc: "สรุปยอดขาย ค่าธรรมเนียม VAT และยอดโอนเข้าร้านของวันที่ระบุ", cap: "ดูสรุปยอด settlement รายวัน", req: ["MID", "SettleDate"],
+    note: "เรียกได้ไม่เกิน 3 ครั้ง (ติด code 966 ถ้าเกิน)", page: 23 },
+  { id: "settleDetails", no: 12, g: "pay", name: "Settlement Details", path: "/api/SettleDetails", needs: ["token"],
+    desc: "รายการ settlement รายธุรกรรมของวันที่ระบุ แยกยอด ค่าธรรมเนียม VAT ยอดสุทธิ", cap: "ดึงรายละเอียด settlement รายรายการ",
+    req: ["MID", "SettleDate", "PaymentStatus"], note: "เรียกได้ไม่เกิน 3 ครั้ง (ติด code 966 ถ้าเกิน)", page: 25 },
+
+  { id: "createBill", no: 13, g: "bill", name: "Create Bill Payment", path: "/api/CreateBillPay", needs: ["token"],
+    desc: "สร้าง Bill Payment เป็น QR code หรือ barcode กำหนดวันหมดอายุได้", cap: "ออกบิลชำระเงินเป็น QR / Barcode",
+    req: ["MID", "QRType", "AmountPaid", "Ref1", "Ref2", "ExpridFlag"], opt: ["Ref3", "Ref4", "ExpirationDatetime"], note: "ได้ BillPayID กลับมา", page: 27 },
+  { id: "billInquiry", no: 14, g: "bill", name: "Bill Payment Inquiry", path: "/api/BillPayInquiry", needs: ["token", "createBill"],
+    desc: "เช็กสถานะบิล", cap: "ตรวจสถานะ Bill Payment", req: ["MID", "BillPayID"], opt: ["OrderID"], note: "เรียกได้ไม่เกิน 5 ครั้งต่อวัน", page: 29 },
+  { id: "billCancel", no: 15, g: "bill", name: "Bill Payment Cancel", path: "/api/BillPayCancel", needs: ["token", "createBill"],
+    desc: "ยกเลิก QR Bill Payment", cap: "ยกเลิก Bill Payment", req: ["MID", "BillPayID"], page: 31 },
+
+  { id: "cbVerify", no: 16, g: "cb", cb: true, name: "Payment Verify Callback", needs: ["createPayment"],
+    desc: "Gateway ยิงมาที่ร้านค้าเมื่อลูกค้าสแกน QR", cap: "รับแจ้งทันทีเมื่อลูกค้าสแกน QR", page: 32 },
+  { id: "cbConfirm", no: 17, g: "cb", cb: true, name: "Payment Confirm Callback", needs: ["createPayment"],
+    desc: "Gateway ยิงมาเมื่อยืนยันการชำระเงินแล้ว พร้อมค่าธรรมเนียมและยอดสุทธิ", cap: "รับแจ้งเมื่อชำระเงินสำเร็จ", page: 33 },
+  { id: "cbWithdraw", no: 18, g: "cb", cb: true, name: "Withdraw/Settlement Confirm Callback", needs: ["createWithdraw"],
+    desc: "Gateway ยิงมาเมื่อธนาคารโอนเงินถอน/โอนออกแล้ว หรือถูกยกเลิก", cap: "รับแจ้งผลการถอน / โอนออก", page: 34 },
+  { id: "cbFundout", no: 19, g: "cb", cb: true, name: "Fundout Confirm Callback", needs: ["createFundout"],
+    desc: "Gateway ยิงมาเมื่อธนาคารโอนเงิน Fundout แล้ว หรือถูกยกเลิก", cap: "รับแจ้งผล Fundout", page: 35 },
+
+  { id: "plToken", no: 20, g: "link", name: "Payment Link Access Token", path: "/oauth/token", ct: "form-urlencoded", auth: "ไม่ต้องใช้",
+    desc: "ขอ token สำหรับ Payment Link (client_id/secret ชุดของ Payment Link)", cap: "ขอ token สำหรับ Payment Link", req: ["grant_type", "client_id", "client_secret"], page: 36 },
+  { id: "getPaymentLink", no: 21, g: "link", name: "Get Payment Link", path: "/api/PaymentLink/GetPaymentLink", needs: ["plToken"],
+    desc: "สร้างลิงก์ชำระเงินส่งให้ลูกค้าเปิดจ่ายเอง", cap: "สร้างลิงก์ชำระเงินส่งให้ลูกค้า",
+    req: ["MID", "TransactionID", "AmountPaid"], opt: ["MerchantName", "ProductName"], page: 37 },
+
+  { id: "cardUrl", no: "–", g: "card", name: "Card Payment URL", card: true, path: "/CardPayment", needs: ["createPayment"], ct: "form POST (redirect)", auth: "apikey (xkey)",
+    desc: "Redirect ลูกค้าไปหน้าชำระบัตรเครดิตด้วย form POST หลังสร้างรายการ PaymentType = CARD", cap: "รับชำระบัตรเครดิตออนไลน์ผ่านหน้าชำระของ Max Card",
+    req: ["xkey", "orderid", "amount", "merchantname", "ref1", "ref2", "ref3"], opt: ["productname"],
+    note: "orderid/amount/ref1–3 ต้องตรงกับ Create Payment (CARD) · apikey ดูเอกสารหน้า 39", page: 39 },
+];
+const BY_ID = Object.fromEntries(SERVICES.map(s => [s.id, s]));
+
+// PaymentType values of Create Payment (spec page 4)
+const PAY_TYPES = [
+  { code: "QRTS", name: "QR Thai QR", note: "ใส่ BillPayFlag = Y ถ้าจะสร้าง QR แบบ KBANK Bill Payment" },
+  { code: "QRPP", name: "QR PromptPay" },
+  { code: "QRCS", name: "QR Credit Card" },
+  { code: "CARD", name: "Credit Card", note: "ต้อง redirect ไป Card Payment URL ต่อ" },
+  { code: "MAXP", name: "Max Card Point" },
+  { code: "MAXW", name: "Max Me Wallet" },
+  { code: "DGW01", name: "Digital Wallet (Phase 1)" },
+  { code: "ACUP", name: "ACU Pay", note: "B scan C ต้องส่ง CustAccNo และ BScanCFlag = Y" },
+];
+const TYPE_BY = Object.fromEntries(PAY_TYPES.map(t => [t.code, t]));
+
+const PRESETS = [
+  { name: "รับชำระ QR", ids: ["createPayment", "paymentInquiry", "voidPayment", "cbVerify", "cbConfirm"], types: ["QRTS", "QRPP"] },
+  { name: "บัตรเครดิตออนไลน์", ids: ["createPayment", "paymentInquiry", "cbConfirm"], types: ["CARD"] },
+  { name: "ถอน / โอนออก", ids: ["balance", "createWithdraw", "withdrawInquiry", "cbWithdraw"] },
+  { name: "Bill Payment", ids: ["createBill", "billInquiry", "billCancel", "cbConfirm"] },
+  { name: "Payment Link", ids: ["getPaymentLink"] },
+  { name: "กระทบยอด", ids: ["settleSummary", "settleDetails", "balance"] },
+];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let picked = new Set();
+let types = new Set();   // PaymentType codes chosen under Create Payment
+try {
+  const saved = JSON.parse(localStorage.getItem("spec.picked") || "[]");
+  saved.forEach(id => BY_ID[id] && picked.add(id));
+  JSON.parse(localStorage.getItem("spec.types") || "[]").forEach(c => TYPE_BY[c] && types.add(c));
+} catch {}
+function persist() { try { localStorage.setItem("spec.picked", JSON.stringify([...picked])); localStorage.setItem("spec.types", JSON.stringify([...types])) } catch {} }
+const chosenTypes = () => PAY_TYPES.filter(t => types.has(t.code));
+
+// picked + everything they depend on; auto[id] = who pulled it in
+function resolve() {
+  const all = new Set(picked), auto = {};
+  const pull = (dep, by) => {
+    if (!picked.has(dep)) (auto[dep] = auto[dep] || new Set()).add(by);
+    if (!all.has(dep)) { all.add(dep); visit(dep) }
+  };
+  const visit = id => (BY_ID[id].needs || []).forEach(dep => pull(dep, BY_ID[id].name));
+  [...picked].forEach(visit);
+  if (types.has("CARD")) pull("cardUrl", "PaymentType CARD");
+  return { all: SERVICES.filter(s => all.has(s.id)), auto };
+}
+function capOf(s) {
+  if (s.id !== "createPayment" || !types.size) return s.cap;
+  return "รับชำระด้วย " + chosenTypes().map(t => `${t.name} (${t.code})`).join(", ");
+}
+function urlOf(s) { return s.cb ? "" : s.path }
+
+function typesHTML() {
+  return `<fieldset class="subtypes">
+    <legend>PaymentType ที่ใช้ได้ <span>(${types.size}/${PAY_TYPES.length})</span>
+      <button type="button" id="allTypes">${types.size === PAY_TYPES.length ? "ไม่เลือกทั้งหมด" : "เลือกทั้งหมด"}</button></legend>
+    ${PAY_TYPES.map(t => `<label class="sub" for="pt-${t.code}">
+      <input type="checkbox" id="pt-${t.code}" data-type="${t.code}" ${types.has(t.code) ? "checked" : ""}>
+      <span><code>${t.code}</code> ${esc(t.name)}${t.note ? `<small>${esc(t.note)}</small>` : ""}</span>
+    </label>`).join("")}
+  </fieldset>`;
+}
+function renderPick() {
+  const { auto } = resolve();
+  $("groups").innerHTML = GROUPS.map(g => {
+    const items = SERVICES.filter(s => s.g === g.id);
+    return `<div class="group">
+      <div class="group-head"><h3>${g.name}</h3><button type="button" data-group="${g.id}">เลือกทั้งกลุ่ม</button></div>
+      ${items.map(s => `<label class="svc" for="cb-${s.id}">
+        <input type="checkbox" id="cb-${s.id}" data-id="${s.id}" ${picked.has(s.id) ? "checked" : ""}>
+        <span class="svc-name"><span class="svc-no">${s.no}</span>${esc(s.name)}
+          ${auto[s.id] ? `<span class="tag auto">ใช้ร่วมอัตโนมัติ</span>` : ""}${s.cb ? `<span class="tag cb">Callback</span>` : ""}</span>
+        <span class="svc-desc">${esc(s.desc)}</span>
+      </label>${s.id === "createPayment" ? typesHTML() : ""}`).join("")}
+    </div>`;
+  }).join("");
+}
+
+function renderSummary() {
+  const { all, auto } = resolve();
+  const apis = all.filter(s => !s.cb), cbs = all.filter(s => s.cb);
+  $("sApi").textContent = apis.length;
+  $("sCb").textContent = cbs.length;
+  $("sAuto").textContent = Object.keys(auto).length;
+  $("sumJump").hidden = !all.length;
+  $("sumJumpText").textContent = `API ${apis.length} เส้น${cbs.length ? ` · Callback ${cbs.length}` : ""}`;
+  if (!all.length) {
+    $("summary").innerHTML = `<div class="empty">ติ๊ก service ทางซ้าย หรือกดชุดสำเร็จรูป<br>แล้วสรุปเส้นที่ใช้ได้จะขึ้นที่นี่</div>`;
+    return;
+  }
+  const caps = all.filter(s => picked.has(s.id)).map(capOf);
+  const ep = s => `<details class="ep">
+    <summary>
+      <span class="method${s.cb ? " cb" : ""}">${s.cb ? "IN" : "POST"}</span>
+      <span class="ep-title"><span class="n">${s.no}. ${esc(s.name)}</span>
+        <code>${s.cb ? "Gateway → URL ของร้านค้า" : esc(urlOf(s))}</code></span>
+      ${auto[s.id] ? `<span class="tag auto">อัตโนมัติ</span>` : ""}
+    </summary>
+    <div class="ep-detail">
+      <div>${esc(s.desc)}</div>
+      ${auto[s.id] ? `<div class="why">เพิ่มเพราะ ${[...auto[s.id]].map(esc).join(", ")} ต้องใช้</div>` : ""}
+      <dl class="kv">
+        <dt>Content-Type</dt><dd>${s.ct === "form-urlencoded" ? "application/x-www-form-urlencoded" : s.ct || "application/json; charset=utf-8"}</dd>
+        ${s.cb ? "" : `<dt>Authentication</dt><dd>${s.auth || "Bearer Token"}</dd>`}
+        ${s.id === "createPayment" ? `<dt>PaymentType</dt><dd class="fields">${types.size ? chosenTypes().map(t => `<span class="f">${t.code}</span>`).join("") : `<span class="why">ยังไม่ได้เลือก ติ๊กใต้ Create Payment ทางซ้าย</span>`}</dd>` : ""}
+        ${s.req ? `<dt>Field บังคับ</dt><dd class="fields">${s.req.map(f => `<span class="f">${f}</span>`).join("")}</dd>` : ""}
+        ${s.opt ? `<dt>Field ไม่บังคับ</dt><dd class="fields">${s.opt.map(f => `<span class="f opt">${f}</span>`).join("")}</dd>` : ""}
+        <dt>เอกสาร</dt><dd>หน้า ${s.page}</dd>
+      </dl>
+      ${s.note ? `<div class="note">${esc(s.note)}</div>` : ""}
+      ${s.id === "createPayment" ? chosenTypes().filter(t => t.note).map(t => `<div class="note"><b>${t.code}</b>: ${esc(t.note)}</div>`).join("") : ""}
+    </div>
+  </details>`;
+  const order = [];
+  if (all.some(s => s.id === "token")) order.push(`ขอ token ที่ <code>/oauth/token</code> แล้วแนบ <code>Authorization: Bearer …</code> ทุกเส้น (token หมดอายุ 30 นาที)`);
+  if (all.some(s => s.id === "plToken")) order.push(`Payment Link ใช้ token ของตัวเอง ขอที่ <code>/oauth/token</code> ด้วย client ของ Payment Link`);
+  if (all.some(s => s.id === "createPayment")) order.push(`สร้างรายการด้วย Create Payment แล้วเก็บ <code>OrderID</code>, <code>Ref1–3</code> ไว้ใช้กับเส้นถัดไป`);
+  if (all.some(s => s.id === "createPayment") && types.size) order.push(`ส่ง <code>PaymentType</code> เป็นหนึ่งใน ${chosenTypes().map(t => `<code>${t.code}</code>`).join(", ")}`);
+  if (all.some(s => s.id === "cardUrl")) order.push(`ถ้า PaymentType = CARD ให้ redirect ลูกค้าไป Card Payment URL ด้วย form POST`);
+  if (cbs.length) order.push(`เปิด endpoint ฝั่งร้านค้ารับ callback ${cbs.length} ตัว แล้วแจ้ง URL ให้ทีม Max Card`);
+  if (all.some(s => s.id === "createBill")) order.push(`ออกบิลด้วย Create Bill Payment แล้วเก็บ <code>BillPayID</code> ไว้เช็กสถานะหรือยกเลิก`);
+  if (all.some(s => s.id === "createWithdraw" || s.id === "createFundout")) order.push(`การโอนออกได้ผลแบบ async ให้ดูผลจาก callback หรือ Inquiry`);
+
+  $("summary").innerHTML = `
+    <div><p class="sec-title">ทำอะไรได้บ้าง</p><ul class="caps">${caps.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>
+    ${order.length ? `<div><p class="sec-title">ลำดับการเชื่อมต่อ</p><ol class="flow">${order.map(o => `<li>${o}</li>`).join("")}</ol></div>` : ""}
+    ${apis.length ? `<div><p class="sec-title">API ที่ต้องเรียก (${apis.length})</p>${apis.map(ep).join("")}</div>` : ""}
+    ${cbs.length ? `<div><p class="sec-title">Callback ที่ร้านค้าต้องรับ (${cbs.length})</p>${cbs.map(ep).join("")}</div>` : ""}`;
+}
+
+function render() { renderPick(); renderSummary() }
+
+function summaryText() {
+  const { all, auto } = resolve();
+  if (!all.length) return "";
+  const lines = ["Max Card Payment Gateway (Spec v3.8)", ""];
+  lines.push("ทำอะไรได้บ้าง:");
+  all.filter(s => picked.has(s.id)).forEach(s => lines.push(`- ${capOf(s)}`));
+  lines.push("", "API ที่ต้องเรียก (POST):");
+  all.filter(s => !s.cb).forEach(s => lines.push(`${s.no}. ${s.name}${auto[s.id] ? " (ใช้ร่วม)" : ""}\n   ${urlOf(s)}${s.req ? `\n   Field บังคับ: ${s.req.join(", ")}` : ""}` +
+    (s.id === "createPayment" && types.size ? `\n   PaymentType: ${[...chosenTypes()].map(t => t.code).join(", ")}` : "")));
+  const cbs = all.filter(s => s.cb);
+  if (cbs.length) { lines.push("", "Callback ที่ร้านค้าต้องรับ:"); cbs.forEach(s => lines.push(`${s.no}. ${s.name}`)) }
+  return lines.join("\n");
+}
+
+/* events */
+function syncTypes() { if (!picked.has("createPayment")) types.clear() }
+$("groups").addEventListener("change", e => {
+  const code = e.target.dataset.type;
+  if (code) {
+    if (e.target.checked) { types.add(code); picked.add("createPayment") } else types.delete(code);
+    persist(); render();
+    return document.getElementById("pt-" + code)?.focus();
+  }
+  const id = e.target.dataset.id; if (!id) return;
+  e.target.checked ? picked.add(id) : picked.delete(id);
+  syncTypes(); persist(); render();
+  document.getElementById("cb-" + id)?.focus();
+});
+$("groups").addEventListener("click", e => {
+  if (e.target.id === "allTypes") {
+    const allOn = types.size === PAY_TYPES.length;
+    PAY_TYPES.forEach(t => allOn ? types.delete(t.code) : types.add(t.code));
+    if (!allOn) picked.add("createPayment");
+    persist(); render();
+    return $("allTypes").focus();
+  }
+  const g = e.target.closest("[data-group]"); if (!g) return;
+  const ids = SERVICES.filter(s => s.g === g.dataset.group).map(s => s.id);
+  const allOn = ids.every(id => picked.has(id));
+  ids.forEach(id => allOn ? picked.delete(id) : picked.add(id));
+  syncTypes(); persist(); render();
+});
+$("presets").insertAdjacentHTML("beforeend", PRESETS.map((p, i) => `<button type="button" class="chipbtn" data-preset="${i}">${p.name}</button>`).join(""));
+$("presets").addEventListener("click", e => {
+  const b = e.target.closest("[data-preset]"); if (!b) return;
+  PRESETS[b.dataset.preset].ids.forEach(id => picked.add(id));
+  (PRESETS[b.dataset.preset].types || []).forEach(c => types.add(c));
+  persist(); render(); toast(`เพิ่มชุด "${PRESETS[b.dataset.preset].name}" แล้ว`);
+});
+$("clearAll").onclick = () => { picked.clear(); types.clear(); persist(); render() };
+$("copyBtn").onclick = async () => {
+  const text = summaryText();
+  if (!text) return toast("ยังไม่ได้เลือก service");
+  try { await navigator.clipboard.writeText(text); toast("คัดลอกสรุปแล้ว") }
+  catch { toast("คัดลอกไม่ได้ ลองเลือกข้อความในสรุปเอง") }
+};
+let toastT;
+function toast(msg) { const el = $("toast"); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 2200) }
+
+render();
+</script>
+</body>
+</html>

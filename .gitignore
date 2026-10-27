@@ -1,0 +1,10 @@
+# local Python environment (recreate with: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt)
+.venv/
+__pycache__/
+
+# macOS
+.DS_Store
+
+# local data from before the move to Supabase
+taskjob.xlsx
+document/

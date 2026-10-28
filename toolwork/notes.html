@@ -66,6 +66,19 @@ header { background: var(--surface); border-bottom: 1px solid var(--line); flex:
 .item .p { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .item .d { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums }
 .list .empty { color: var(--muted); padding: 24px 12px; text-align: center }
+.group { padding: 10px 10px 2px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted) }
+.row { position: relative }
+.row .item { padding-right: 40px }
+.pin { border: 1px solid transparent; background: transparent; border-radius: 6px; color: var(--muted); display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; flex: none }
+.pin svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.pin:hover { background: var(--col); color: var(--fg) }
+.pin[aria-pressed="true"] { color: var(--accent) }
+.pin[aria-pressed="true"] svg { fill: currentColor }
+.row .pin { position: absolute; top: 6px; right: 4px; opacity: 0 }
+.row:hover .pin, .row .pin:focus-visible, .row .pin[aria-pressed="true"] { opacity: 1 }
+.ed-bar .pin { border-color: var(--line); background: var(--surface); width: auto; padding: 0 10px; gap: 6px; display: inline-flex; font-weight: 500 }
+.ed-bar .pin:hover { background: var(--col) }
+.ed-bar .pin[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft) }
 
 .editor { display: flex; flex-direction: column; min-height: 0; min-width: 0 }
 .ed-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-block: 10px; border-bottom: 1px solid var(--line); background: var(--surface) }
@@ -105,6 +118,9 @@ header { background: var(--surface); border-bottom: 1px solid var(--line); flex:
   input, textarea { font-size: 16px }
   #body { font-size: 16px }
   .item { padding: 12px 10px; border-bottom: 1px solid var(--line); border-radius: 0; margin-top: 0 }
+  .row .item { padding-right: 48px }
+  .row .pin { opacity: 1; width: 40px; height: 40px; top: 8px }
+  .ed-bar .pin { height: 38px }
   .drop-hint { display: none }
   .att .rm { min-width: 32px; height: 32px; font-size: 15px }
   .ed-bar .btn { padding: 8px 12px }
@@ -143,6 +159,7 @@ header { background: var(--surface); border-bottom: 1px solid var(--line); flex:
       <button class="btn back" type="button" id="backBtn">‹ รายการ</button>
       <span class="file" id="file"></span>
       <span class="state" id="state" aria-live="polite"></span>
+      <button class="pin" type="button" id="pinBtn" aria-pressed="false" hidden></button>
       <span id="delWrap"></span>
     </div>
     <div id="blank" class="blank">
@@ -181,7 +198,9 @@ const toItem = r => ({ id: r.id, userId: r.user_id, title: r.title || "ไม่
   files: r.note_attachments ? r.note_attachments[0]?.count || 0 : undefined });
 let me = null;                 // signed-in user
 let authors = {};              // user_id -> email of approved members
+let pins = new Set();          // ids of notes the signed-in user pinned (public.note_pins, private to each user)
 const mine = n => n.userId === me?.id;
+const PIN_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l-1 6 4 4v2h-5v6l-1 1-1-1v-6H6v-2l4-4z"/></svg>`;
 const authorOf = n => mine(n) ? "ฉัน" : (authors[n.userId] || "สมาชิก").split("@")[0];
 async function must(q) { const { data, error } = await q; if (error) throw new Error(error.message); return data }
 
@@ -196,11 +215,41 @@ function renderList() {
   const q = $("q").value.trim().toLowerCase();
   const shown = notes.filter(n => !q || (n.title + " " + n.preview).toLowerCase().includes(q));
   $("count").textContent = q ? `พบ ${shown.length} จาก ${notes.length} โน้ต` : `${notes.length} โน้ต`;
-  $("list").innerHTML = shown.map(n => `<button type="button" class="item" data-id="${esc(n.id)}" aria-current="${current && current.id === n.id}">
+  const row = n => `<div class="row"><button type="button" class="item" data-id="${esc(n.id)}" aria-current="${current && current.id === n.id}">
       <div class="t">${esc(n.title)}</div>
       <div class="p">${esc(n.preview) || "ไม่มีเนื้อหา"}</div>
       <div class="d">${esc(authorOf(n))} · ${fmt(n.updated)}${n.files ? ` · แนบ ${n.files} ไฟล์` : ""}</div>
-    </button>`).join("") || `<div class="empty">${notes.length ? "ไม่พบโน้ตที่ตรงกับคำค้น" : "ยังไม่มีโน้ต กด “+ ใหม่” เพื่อเริ่มจด"}</div>`;
+    </button>${pinButton(n)}</div>`;
+  const pinned = shown.filter(n => pins.has(n.id)), rest = shown.filter(n => !pins.has(n.id));
+  $("list").innerHTML = (pinned.length
+      ? `<div class="group">ปักหมุด</div>${pinned.map(row).join("")}${rest.length ? `<div class="group">โน้ตอื่น</div>` : ""}`
+      : "") + rest.map(row).join("")
+    || `<div class="empty">${notes.length ? "ไม่พบโน้ตที่ตรงกับคำค้น" : "ยังไม่มีโน้ต กด “+ ใหม่” เพื่อเริ่มจด"}</div>`;
+  renderPinBtn();
+}
+function pinButton(n) {
+  const on = pins.has(n.id);
+  return `<button type="button" class="pin" data-pin="${esc(n.id)}" aria-pressed="${on}" aria-label="${on ? "เลิกปักหมุด" : "ปักหมุด"} ${esc(n.title)}" title="${on ? "เลิกปักหมุด" : "ปักหมุด"}">${PIN_ICON}</button>`;
+}
+function renderPinBtn() {
+  const b = $("pinBtn"), id = current?.id, on = !!id && pins.has(id);
+  b.hidden = !id;
+  b.setAttribute("aria-pressed", on);
+  b.innerHTML = `${PIN_ICON}<span>${on ? "ปักหมุดแล้ว" : "ปักหมุด"}</span>`;
+}
+async function togglePin(id) {
+  const on = !pins.has(id);
+  on ? pins.add(id) : pins.delete(id);
+  renderList();
+  const { error } = on
+    ? await sb.from("note_pins").insert({ note_id: id })
+    : await sb.from("note_pins").delete().eq("note_id", id).eq("user_id", me.id);
+  if (error && !(on && error.code === "23505")) {   // 23505: already pinned in another tab
+    on ? pins.delete(id) : pins.add(id);
+    renderList();
+    return toast((on ? "ปักหมุดไม่สำเร็จ: " : "เลิกปักหมุดไม่สำเร็จ: ") + error.message);
+  }
+  toast(on ? "ปักหมุดแล้ว อยู่บนสุดของรายการ" : "เลิกปักหมุดแล้ว");
 }
 
 function setState(text, err) { $("state").textContent = text; $("state").classList.toggle("err", !!err) }
@@ -212,6 +261,7 @@ function showEditor(on) {
   $("file").textContent = !on ? "" : ro ? `เขียนโดย ${current.author} · อ่านอย่างเดียว` : current?.id ? "โน้ตของคุณ · ทุกคนในทีมอ่านได้" : "ยังไม่บันทึก";
   if (!on) files = [];
   renderFiles();
+  renderPinBtn();
   resetDelete();
 }
 function resetDelete() {
@@ -266,10 +316,12 @@ async function newNote() {
 }
 async function loadList() {
   try {
-    const [rows, people] = await Promise.all([
+    const [rows, people, pinRows] = await Promise.all([
       must(sb.from("notes").select(COLS + ",note_attachments(count)").is("deleted_at", null).order("updated_at", { ascending: false })),
       must(sb.from("members").select("user_id,email").eq("status", "approved")),
+      must(sb.from("note_pins").select("note_id").eq("user_id", me.id)),
     ]);
+    pins = new Set(pinRows.map(p => p.note_id));
     authors = Object.fromEntries(people.map(p => [p.user_id, p.email]));
     notes = rows.map(toItem);
     $("offline").hidden = true; $("newBtn").disabled = false;
@@ -390,7 +442,11 @@ $("edBody").addEventListener("paste", e => {
 
 /* events */
 $("newBtn").onclick = newNote;
-$("list").addEventListener("click", e => { const b = e.target.closest(".item"); if (b && b.dataset.id !== current?.id) openNote(b.dataset.id); else if (b) showEditor(true) });
+$("list").addEventListener("click", e => {
+  const p = e.target.closest("[data-pin]"); if (p) return togglePin(p.dataset.pin);
+  const b = e.target.closest(".item"); if (b && b.dataset.id !== current?.id) openNote(b.dataset.id); else if (b) showEditor(true);
+});
+$("pinBtn").onclick = () => { if (current?.id) togglePin(current.id) };
 $("q").addEventListener("input", renderList);
 $("title").addEventListener("input", scheduleSave);
 $("body").addEventListener("input", scheduleSave);

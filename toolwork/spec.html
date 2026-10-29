@@ -208,8 +208,8 @@ const SERVICES = [
     cap: "ขอ token เพื่อเรียก API", req: ["grant_type", "client_id", "client_secret"], page: 3 },
 
   { id: "createPayment", no: 2, g: "pay", name: "Create Payment Transaction", path: "/api/CreatePayment", needs: ["token"],
-    desc: "สร้างรายการรับชำระ ได้ QR (Base64 + qrRawData) กลับมา รองรับ QRTS, QRPP, QRCS, CARD, MAXP, MAXW, DGW01, ACUP",
-    cap: "รับชำระด้วย Thai QR, PromptPay, QR บัตรเครดิต, บัตรเครดิต, Max Card Point, Max Me Wallet, Digital Wallet, ACU Pay",
+    desc: "สร้างรายการรับชำระ ได้ QR (Base64 + qrRawData) กลับมา รองรับ QRTS, QRPP, QRCS, CARD, MAXP, MAXW, DGW01, ACUP, TRUE",
+    cap: "รับชำระด้วย Thai QR, PromptPay, QR บัตรเครดิต, บัตรเครดิต, Max Card Point, Max Me Wallet, Digital Wallet, ACU Pay, TrueMoney Wallet",
     req: ["MID", "TransactionID", "PaymentType", "AmountPaid"], opt: ["CustAccNo", "CustName", "BScanCFlag", "BillPayFlag"],
     note: "ได้ OrderID, Ref1–3 กลับมาใช้กับเส้นอื่น · PaymentType = CARD ต้องใช้ Card Payment URL ต่อ", page: 4 },
   { id: "verifySlip", no: 3, g: "pay", name: "Verify Payment Slip", path: "/api/VerifySlip", needs: ["token", "createPayment"],
@@ -281,6 +281,7 @@ const PAY_TYPES = [
   { code: "MAXW", name: "Max Me Wallet" },
   { code: "DGW01", name: "Digital Wallet (Phase 1)" },
   { code: "ACUP", name: "ACU Pay", note: "B scan C ต้องส่ง CustAccNo และ BScanCFlag = Y" },
+  { code: "TRUE", name: "TrueMoney Wallet" },
 ];
 const TYPE_BY = Object.fromEntries(PAY_TYPES.map(t => [t.code, t]));
 

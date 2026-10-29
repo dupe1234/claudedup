@@ -58,6 +58,14 @@ header { background: var(--surface); border-bottom: 1px solid var(--line); flex:
 .side-head { display: flex; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line) }
 .side-head input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 6px 10px }
 .count { padding: 8px 12px 4px; font-size: 12px; color: var(--muted) }
+.folders { display: flex; gap: 6px; padding: 10px 12px 0; overflow-x: auto; scrollbar-width: none }
+.folders button { flex: none; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 500; white-space: nowrap }
+.folders button:hover { border-color: var(--accent); color: var(--accent) }
+.folders button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+.folders svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.folders .n { font-size: 12px; opacity: .75; font-variant-numeric: tabular-nums }
+.folder-pick { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted) }
+.folder-pick select { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 5px 8px; font: inherit; color: var(--fg) }
 .list { flex: 1; overflow-y: auto; padding: 0 6px 12px }
 .item { display: block; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 6px; padding: 8px 10px; margin-top: 2px }
 .item:hover { background: var(--bg) }
@@ -121,6 +129,8 @@ header { background: var(--surface); border-bottom: 1px solid var(--line); flex:
   .row .item { padding-right: 48px }
   .row .pin { opacity: 1; width: 40px; height: 40px; top: 8px }
   .ed-bar .pin { height: 38px }
+  .folders button { padding: 7px 14px }
+  .folder-pick select { font-size: 16px; padding: 7px 8px }
   .drop-hint { display: none }
   .att .rm { min-width: 32px; height: 32px; font-size: 15px }
   .ed-bar .btn { padding: 8px 12px }
@@ -150,6 +160,7 @@ header { background: var(--surface); border-bottom: 1px solid var(--line); flex:
       <input id="q" type="search" placeholder="ค้นหาโน้ต" aria-label="ค้นหาโน้ต">
       <button class="btn primary" type="button" id="newBtn">+ ใหม่</button>
     </div>
+    <div class="folders" id="folders" role="group" aria-label="โฟลเดอร์"></div>
     <div class="count" id="count"></div>
     <div class="list" id="list"></div>
   </aside>
@@ -159,6 +170,7 @@ header { background: var(--surface); border-bottom: 1px solid var(--line); flex:
       <button class="btn back" type="button" id="backBtn">‹ รายการ</button>
       <span class="file" id="file"></span>
       <span class="state" id="state" aria-live="polite"></span>
+      <label class="folder-pick" id="folderPick" hidden>โฟลเดอร์ <select id="folderSel"></select></label>
       <button class="pin" type="button" id="pinBtn" aria-pressed="false" hidden></button>
       <span id="delWrap"></span>
     </div>
@@ -193,11 +205,17 @@ let current = null;      // open note: {id|null}
 let dirty = false, timer = null, saving = Promise.resolve();
 
 /* storage: Supabase table public.notes (row level security keeps each user's notes private) */
-const COLS = "id,user_id,title,body,updated_at";
-const toItem = r => ({ id: r.id, userId: r.user_id, title: r.title || "ไม่มีชื่อ", preview: (r.body || "").replace(/\s+/g, " ").trim().slice(0, 120), updated: Date.parse(r.updated_at),
+const COLS = "id,user_id,title,body,updated_at,folder_id";
+const toItem = r => ({ id: r.id, userId: r.user_id, folderId: r.folder_id || null, title: r.title || "ไม่มีชื่อ", preview: (r.body || "").replace(/\s+/g, " ").trim().slice(0, 120), updated: Date.parse(r.updated_at),
   files: r.note_attachments ? r.note_attachments[0]?.count || 0 : undefined });
 let me = null;                 // signed-in user
 let authors = {};              // user_id -> email of approved members
+let folders = [];             // shared folders from public.note_folders: {id, name}; notes with no folder are "ทั่วไป"
+const ALL = "all", GENERAL = "general";
+let folder = (() => { try { return localStorage.getItem("notes.folder") || ALL } catch { return ALL } })();
+const FOLDER_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>`;
+const folderName = id => folders.find(f => f.id === id)?.name || "ทั่วไป";
+const inFolder = n => folder === ALL || (folder === GENERAL ? !n.folderId : n.folderId === folder);
 let pins = new Set();          // ids of notes the signed-in user pinned (public.note_pins, private to each user)
 const mine = n => n.userId === me?.id;
 const PIN_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l-1 6 4 4v2h-5v6l-1 1-1-1v-6H6v-2l4-4z"/></svg>`;
@@ -213,19 +231,35 @@ function fmt(ms) {
 
 function renderList() {
   const q = $("q").value.trim().toLowerCase();
-  const shown = notes.filter(n => !q || (n.title + " " + n.preview).toLowerCase().includes(q));
-  $("count").textContent = q ? `พบ ${shown.length} จาก ${notes.length} โน้ต` : `${notes.length} โน้ต`;
+  renderFolders();
+  const here = notes.filter(inFolder);
+  const shown = here.filter(n => !q || (n.title + " " + n.preview).toLowerCase().includes(q));
+  $("count").textContent = q ? `พบ ${shown.length} จาก ${here.length} โน้ต` : `${here.length} โน้ต`;
   const row = n => `<div class="row"><button type="button" class="item" data-id="${esc(n.id)}" aria-current="${current && current.id === n.id}">
       <div class="t">${esc(n.title)}</div>
       <div class="p">${esc(n.preview) || "ไม่มีเนื้อหา"}</div>
-      <div class="d">${esc(authorOf(n))} · ${fmt(n.updated)}${n.files ? ` · แนบ ${n.files} ไฟล์` : ""}</div>
+      <div class="d">${esc(authorOf(n))} · ${fmt(n.updated)}${folder === ALL && n.folderId ? ` · ${esc(folderName(n.folderId))}` : ""}${n.files ? ` · แนบ ${n.files} ไฟล์` : ""}</div>
     </button>${pinButton(n)}</div>`;
   const pinned = shown.filter(n => pins.has(n.id)), rest = shown.filter(n => !pins.has(n.id));
   $("list").innerHTML = (pinned.length
       ? `<div class="group">ปักหมุด</div>${pinned.map(row).join("")}${rest.length ? `<div class="group">โน้ตอื่น</div>` : ""}`
       : "") + rest.map(row).join("")
-    || `<div class="empty">${notes.length ? "ไม่พบโน้ตที่ตรงกับคำค้น" : "ยังไม่มีโน้ต กด “+ ใหม่” เพื่อเริ่มจด"}</div>`;
+    || `<div class="empty">${q ? "ไม่พบโน้ตที่ตรงกับคำค้น" : folder !== ALL ? `ยังไม่มีโน้ตในโฟลเดอร์ ${esc(folder === GENERAL ? "ทั่วไป" : folderName(folder))} กด “+ ใหม่” เพื่อเริ่มจด` : "ยังไม่มีโน้ต กด “+ ใหม่” เพื่อเริ่มจด"}</div>`;
   renderPinBtn();
+  renderFolderPick();
+}
+function renderFolders() {
+  if (folder !== ALL && folder !== GENERAL && !folders.some(f => f.id === folder)) folder = ALL;
+  const count = id => notes.filter(n => id === ALL || (id === GENERAL ? !n.folderId : n.folderId === id)).length;
+  const chip = (id, name) => `<button type="button" data-folder="${esc(id)}" aria-pressed="${folder === id}">${id === ALL ? "" : FOLDER_ICON}${esc(name)}<span class="n">${count(id)}</span></button>`;
+  $("folders").innerHTML = chip(ALL, "ทั้งหมด") + chip(GENERAL, "ทั่วไป") + folders.map(f => chip(f.id, f.name)).join("");
+}
+function renderFolderPick() {
+  const on = !!current && !current.readOnly && folders.length > 0;
+  $("folderPick").hidden = !on;
+  if (!on) return;
+  $("folderSel").innerHTML = `<option value="">ทั่วไป</option>` + folders.map(f => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join("");
+  $("folderSel").value = current.folderId || "";
 }
 function pinButton(n) {
   const on = pins.has(n.id);
@@ -258,10 +292,11 @@ function showEditor(on) {
   $("app").classList.toggle("open", on);
   const ro = on && current?.readOnly;
   $("title").readOnly = $("body").readOnly = !!ro;
-  $("file").textContent = !on ? "" : ro ? `เขียนโดย ${current.author} · อ่านอย่างเดียว` : current?.id ? "โน้ตของคุณ · ทุกคนในทีมอ่านได้" : "ยังไม่บันทึก";
+  $("file").textContent = !on ? "" : ro ? `เขียนโดย ${current.author} · ${folderName(current.folderId)} · อ่านอย่างเดียว` : current?.id ? "โน้ตของคุณ · ทุกคนในทีมอ่านได้" : "ยังไม่บันทึก";
   if (!on) files = [];
   renderFiles();
   renderPinBtn();
+  renderFolderPick();
   resetDelete();
 }
 function resetDelete() {
@@ -274,13 +309,13 @@ function flush() {
   clearTimeout(timer);
   if (!dirty || !current) return saving;
   dirty = false;
-  const note = current, title = $("title").value.trim(), body = $("body").value;
+  const note = current, title = $("title").value.trim(), body = $("body").value, folder_id = note.folderId || null;
   if (!note.id && !title && !body.trim()) return saving;  // nothing typed yet
   setState("กำลังบันทึก…");
   saving = saving.then(async () => {
     const row = await must(note.id
-      ? sb.from("notes").update({ title, body }).eq("id", note.id).select(COLS).single()
-      : sb.from("notes").insert({ title, body }).select(COLS).single());
+      ? sb.from("notes").update({ title, body, folder_id }).eq("id", note.id).select(COLS).single()
+      : sb.from("notes").insert({ title, body, folder_id }).select(COLS).single());
     note.id = row.id;
     const prev = notes.find(n => n.id === row.id);
     notes = [{ ...toItem(row), files: prev?.files || 0 }, ...notes.filter(n => n.id !== row.id)];
@@ -299,7 +334,7 @@ async function openNote(id) {
   try {
     const row = await must(sb.from("notes").select(COLS).eq("id", id).is("deleted_at", null).single());
     const item = toItem(row);
-    current = { id: row.id, readOnly: !mine(item), author: authorOf(item) };
+    current = { id: row.id, readOnly: !mine(item), author: authorOf(item), folderId: item.folderId };
     $("title").value = row.title; $("body").value = row.body;
     files = [];
     showEditor(true); setState("บันทึกแล้ว " + fmt(Date.parse(row.updated_at))); renderList();
@@ -308,7 +343,7 @@ async function openNote(id) {
 }
 async function newNote() {
   await flush();
-  current = { id: null };
+  current = { id: null, folderId: folder !== ALL && folder !== GENERAL ? folder : null };
   files = [];
   $("title").value = ""; $("body").value = "";
   showEditor(true); setState(""); renderList();
@@ -316,11 +351,13 @@ async function newNote() {
 }
 async function loadList() {
   try {
-    const [rows, people, pinRows] = await Promise.all([
+    const [rows, people, pinRows, folderRows] = await Promise.all([
       must(sb.from("notes").select(COLS + ",note_attachments(count)").is("deleted_at", null).order("updated_at", { ascending: false })),
       must(sb.from("members").select("user_id,email").eq("status", "approved")),
       must(sb.from("note_pins").select("note_id").eq("user_id", me.id)),
+      must(sb.from("note_folders").select("id,name").order("sort_order").order("name")),
     ]);
+    folders = folderRows;
     pins = new Set(pinRows.map(p => p.note_id));
     authors = Object.fromEntries(people.map(p => [p.user_id, p.email]));
     notes = rows.map(toItem);
@@ -445,6 +482,18 @@ $("newBtn").onclick = newNote;
 $("list").addEventListener("click", e => {
   const p = e.target.closest("[data-pin]"); if (p) return togglePin(p.dataset.pin);
   const b = e.target.closest(".item"); if (b && b.dataset.id !== current?.id) openNote(b.dataset.id); else if (b) showEditor(true);
+});
+$("folders").addEventListener("click", e => {
+  const b = e.target.closest("[data-folder]"); if (!b) return;
+  folder = b.dataset.folder;
+  try { localStorage.setItem("notes.folder", folder) } catch {}
+  renderList();
+});
+$("folderSel").addEventListener("change", e => {
+  if (!current || current.readOnly) return;
+  current.folderId = e.target.value || null;
+  dirty = true; flush();
+  if (current.id) toast(`ย้ายไปโฟลเดอร์ ${folderName(current.folderId)} แล้ว`);
 });
 $("pinBtn").onclick = () => { if (current?.id) togglePin(current.id) };
 $("q").addEventListener("input", renderList);
